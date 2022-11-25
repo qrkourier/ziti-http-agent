@@ -1,0 +1,5 @@
+/.env
+/ziti-http-agent/*.pem
+/ziti-http-agent-log/*.log
+/nginx/*.pem
+/nginx-log/*.log
