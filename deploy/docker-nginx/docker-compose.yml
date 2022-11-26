@@ -1,36 +1,36 @@
 version: "3.3"
 services:
-
-  ziti-http-agent:
-
-    #image: ghcr.io/openziti/ziti-http-agent:pr152.350
-    image: ghcr.io/openziti/ziti-http-agent:pr154.357
-
-    restart: always
-
+  nginx:
+    build: ./nginx
+    image: nginx-browzer
+    ports:
+      - "443:443"
     volumes:
-      - ./ziti-http-agent-log:/home/node/ziti-http-agent/log
+      - ./nginx-log:/var/log/nginx
+  flame-agent:
+    image: ghcr.io/openziti/ziti-http-agent:pr154.357
+    restart: always
+    volumes:
       - ./ziti-http-agent:/ziti
-
     ports: []
       #- "443:443"
-
+    entrypoint: []
+    command:
+      - node
+      - index.js
+    env_file:
+      - flame-agent.env
     environment:
-
       NODE_ENV: production
-
       ZITI_NODEJS_LOG: 99
       ZITI_LOG: 99
       ZITI_AGENT_LOGLEVEL: debug
-
       # the ZBR log level may impact user agent performance
       ZITI_BROWZER_RUNTIME_LOGLEVEL: silent
-
       # the user agent must be able to verify this server's certificate, and
       # this value must not be identical to ZITI_AGENT_HOST
       ZITI_CONTROLLER_HOST: ${ZITI_CONTROLLER_HOST}
       ZITI_CONTROLLER_PORT: ${ZITI_CONTROLLER_PORT}
-
       # this value must not be identical to ZITI_CONTROLLER_HOST
       ZITI_AGENT_HOST: ${ZITI_AGENT_HOST}
       ZITI_AGENT_CERTIFICATE_PATH: /ziti/fullchain.pem
@@ -39,7 +39,6 @@ services:
       # match the port on which the external server or load balancer is
       # listening
       ZITI_AGENT_HTTPS_PORT: 443
-
       # wildcard: must match ZITI_AGENT_HOST?
       # service: Ziti service name
       # port: Ziti service port
@@ -56,17 +55,59 @@ services:
       ZITI_AGENT_TARGET_SCHEME: http
       ZITI_AGENT_TARGET_SERVICE: ${ZITI_AGENT_TARGET_SERVICE}
       ZITI_AGENT_TARGET_PORT: ${ZITI_AGENT_TARGET_PORT}
-
       IDP_ISSUER_BASE_URL: ${IDP_ISSUER_BASE_URL}
       IDP_CLIENT_ID: ${IDP_CLIENT_ID}
       IDP_CLAIMS_PROPERTY: email
       IDP_TOKEN_DURATION: 28800
-
-  nginx:
-    build: ./nginx
-    image: nginx:browzer
-    ports:
-      - "443:443"
+  jellyfin-agent:
+    image: ghcr.io/openziti/ziti-http-agent:pr154.357
+    restart: always
     volumes:
-      - ./nginx-log:/var/log/nginx
-
+      - ./ziti-http-agent:/ziti
+    ports: []
+      #- "443:443"
+    entrypoint: []
+    command:
+      - node
+      - index.js
+    env_file:
+      - jellyfin-agent.env
+    environment:
+      NODE_ENV: production
+      ZITI_NODEJS_LOG: 99
+      ZITI_LOG: 99
+      ZITI_AGENT_LOGLEVEL: debug
+      # the ZBR log level may impact user agent performance
+      ZITI_BROWZER_RUNTIME_LOGLEVEL: silent
+      # the user agent must be able to verify this server's certificate, and
+      # this value must not be identical to ZITI_AGENT_HOST
+      ZITI_CONTROLLER_HOST: ${ZITI_CONTROLLER_HOST}
+      ZITI_CONTROLLER_PORT: ${ZITI_CONTROLLER_PORT}
+      # this value must not be identical to ZITI_CONTROLLER_HOST
+      ZITI_AGENT_HOST: ${ZITI_AGENT_HOST}
+      ZITI_AGENT_CERTIFICATE_PATH: /ziti/fullchain.pem
+      ZITI_AGENT_KEY_PATH: /ziti/privkey.pem
+      # the port on which this agent will listen inside the container must
+      # match the port on which the external server or load balancer is
+      # listening
+      ZITI_AGENT_HTTPS_PORT: 443
+      # wildcard: must match ZITI_AGENT_HOST?
+      # service: Ziti service name
+      # port: Ziti service port
+      # path: Ziti service HTTP route
+      ZITI_AGENT_TARGETS: >
+          {
+            "targetArray": [{
+              "wildcard": "${ZITI_AGENT_HOST}",
+              "service": "${ZITI_AGENT_TARGET_SERVICE}",
+              "port": ${ZITI_AGENT_TARGET_PORT},
+              "path": "/"
+            }]
+          }
+      ZITI_AGENT_TARGET_SCHEME: http
+      ZITI_AGENT_TARGET_SERVICE: ${ZITI_AGENT_TARGET_SERVICE}
+      ZITI_AGENT_TARGET_PORT: ${ZITI_AGENT_TARGET_PORT}
+      IDP_ISSUER_BASE_URL: ${IDP_ISSUER_BASE_URL}
+      IDP_CLIENT_ID: ${IDP_CLIENT_ID}
+      IDP_CLAIMS_PROPERTY: email
+      IDP_TOKEN_DURATION: 28800
